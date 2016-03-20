@@ -142,8 +142,8 @@ Pr2lr1(isnan(Pr2lr1))=0;
 
 Pr2lf = sum(XYmat1)./ntrials1;                            % p(r1|f)
 Pr1lf = sum(XYmat1,2)./ntrials1;                          % p(r2|f)
-Pflr2 = (Pr2lf.*Pf)./Pr2;                                 % p(f|r2) - bayes' theorem
-Pflr1 = (Pr1lf.*Pf)./Pr1;                                 % p(f|r1) - bayes' theorem
+Pflr2 = (Pr2lf.*Pf)./Pr2;                                 % p(f|r2) - bayes' 
+Pflr1 = (Pr1lf.*Pf)./Pr1;                                 % p(f|r1) - bayes' 
 % in case of NaNs from divide by zeros
 Pflr2(isnan(Pflr2))=0;
 Pflr1(isnan(Pflr1))=0;
