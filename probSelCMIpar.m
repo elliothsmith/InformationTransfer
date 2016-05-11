@@ -9,7 +9,7 @@ subjects = get_subs(task);
 
 % alignment parameters
 durationMS = 4000;
-offsetMS = -2000;
+offsetMS = -1000;
 bufferMS = 0; % seems like this should stay = 0
 notchFreqs = [55 65];
 filtType = 'stop';
@@ -30,7 +30,7 @@ timePeriods = timePeriods(:,timePeriods(2,:)<durationMS);
 for sb = 67:length(subjects)
 	
 	% getting subject events. 
-	[events evDeets] = get_sub_events(task,subjects{sb});
+	[events evDeets] = get_sub_events(task,subjects{sb}); 
 
 	% [20160301] getting event types. 
 	evType = getStructField(events,'evType');
@@ -40,13 +40,9 @@ for sb = 67:length(subjects)
 	% [20160301] getting specific event times. 
 	stimTimes = [events(stimIdx).mstime];
 	fbTimes = [events(fbIdx).mstime];  	
-
-if ~isempty(evDeets.leads)
 		
 	% finding all pairs of electrodes...
 	trodePairs = nchoosek(evDeets.leads,2);
-
-
 	% looping over channels
     for ch = evDeets.leads	
 		try % to get EEG. 
@@ -69,7 +65,7 @@ if ~isempty(evDeets.leads)
 	end % looping over channels
 
 	%% for each channel pair, calculate CMI
-	for prs = 1:size(trodePairs,1)
+	parfor prs = 1:size(trodePairs,1)
 		%% calulating sCMI for each time period
         for tper = 1:size(timePeriods,2)
    			timePeriod = timePeriods(:,tper)';
@@ -77,30 +73,25 @@ if ~isempty(evDeets.leads)
     		timePeriod = int16((timePeriod)+1); % convert to sample indices
     		
     		% these are the data for sCMI calculation. They are shuffled below. 
-    		Data1 = zscore(squeeze(datamat(timePeriod(1):timePeriod(2),fbIdx,trodePairs(prs,1))));
-    		Data2 = zscore(squeeze(datamat(timePeriod(1):timePeriod(2),fbIdx,trodePairs(prs,2))));
+    		Data1 = squeeze(mean(datamat(timePeriod(1):timePeriod(2),fbIdx,trodePairs(prs,1))),3));
+    		Data2 = squeeze(mean(datamat(timePeriod(1):timePeriod(2),fbIdx,trodePairs(prs,2))),3));
     
-		% making sure that fbClass is the correct size. 
-		if size(Data1,2) ~= length(fbClass) 
-			display('numbers of trials are discordant')
-		end
-
     		% randomly shuffling the samples of the data in [Data1] and [Data2]
     		% not shuffling trials in order to keep the feedback structure the same. It remains to be seen whether this will affect CMI. 
     		Ti = find(fbIdx);
     		for sh = 1:length(Ti)
     			timeBasis = timePeriod(1):timePeriod(2);
     			randIdx = randperm(length(timeBasis));
-    			shuffData1(:,sh) = datamat(timeBasis(randIdx),Ti(sh),trodePairs(prs,1));
+    			shuffData1(:,sh) = datamat(timeBasis(randIdx),Ti(sh),trodePairs(prs,1))));
     			randIdx = randperm(length(timeBasis));
-    			shuffData2(:,sh) = datamat(timeBasis(randIdx),Ti(sh),trodePairs(prs,2));
+    			shuffData2(:,sh) = datamat(timeBasis(randIdx),Ti(sh),trodePairs(prs,2))));
     		end
     
     		%% [20160304] actually doing CMI.
-		[CMI_FB(:,tper,prs,sb),MI_FB(tper,prs,sb)] = sCMI(Data1,Data2,fbClass,0);
+			[CMI_FB(:,tper,prs,sb) MI_FB(tper,prs,sb)] = scmi(Data1,Data2,fbClass)
 			
 			%% [20160304] running the same code on suffled data. 
-    		[shuffCMI_FB(:,tper,prs,pts,sb) shuffMI_FB(tper,prs,sb)] = sCMI(shuffData1, shuffData2, fbClass,0);
+    		[shuffCMI_FB(:,tper,prs,pts,sb) shuffMI_FB(tper,prs,sb)] = sCMI(shuffData1, shuffData2, fbClass);
 
     	end
 	end % looping over pairwise combos of trodes
@@ -110,9 +101,6 @@ if ~isempty(evDeets.leads)
 	save(saveStr,'CMI_FB','MI_FB','shuffCMI_FB','shuffMI_FB','trodePairs','stepSize','windowSize','durationMS','offsetMS','resampleFo','resampleFs')
 
 	clear datamat EEG 
-else
-	display(sprintf('event leads are empty for patient %s',events(1).subject))
-end
 
 end % looping over subjects. 
 

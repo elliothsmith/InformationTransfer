@@ -31,6 +31,8 @@ function [CMI,MI] = sCMI(Data1, Data2, Classification, tau)
 % Version Date: 2014102
 % Author: Elliot H Smith
 
+% matlabpool local 12
+
 % number of signals to examine. Constrained to two for now. {i.e. I(classification;Data1|Data2)}
 numChans = 2;
 
@@ -44,7 +46,7 @@ else
 end
 
 % number of trials in data matrices
-numTrials =length(Classification);=
+numTrials =length(Classification);
 
 %% symbolizing time series
 % symbol size for discretizing the time series. Currently constrained to 3
@@ -61,15 +63,17 @@ end
 
 % initializing clasification cell for discretized signal.
 classesTrialsChans = cell(numTrials, numChans);
-display('Discretizing signals...')
+% display('Discretizing signals...')
 for chs = 1:numChans % looping over channels
-    % update user regarding channels
-    display([' Channel ' num2str(chs) '/' num2str(numChans)])
+    % % update user regarding channels
+    % display([' Channel ' num2str(chs) '/' num2str(numChans)])
+    
     for tt = 1:numTrials % looping over trials
-        % update user regarding trials
-        if(mod(tt,500)==0 || tt==numTrials)
-            disp(['  Trial ' num2str(tt) '/' num2str(numTrials)]);
-        end
+        % % update user regarding trials
+        % if(mod(tt,500)==0 || tt==numTrials)
+        %     disp(['  Trial ' num2str(tt) '/' num2str(numTrials)]);
+        % end
+
         % getting discretized subvector for each trial.
         % length of the data divided by hte symbol size
         tiledTrial = reshape(datamat(:,tt,chs)',symbolSize,floor(size(datamat,1)./symbolSize));
@@ -109,7 +113,7 @@ for trls = 1:numTrials % loooping over trials.
     tiles2 = cell2mat(classesTrialsChans(trls,2)); % discretized Channel 2
     for tls = 1:length(tiles1)
         
-        %% [20160304] NEED TO FIX THIS TO INCLUDE MORE CLASSES
+        %% [20160304] TODO: FIX THIS TO INCLUDE MORE CLASSES
         if Classification(trls)==2; % for first trial type (feedback)
             if tiles1(tls)~=0 && tiles2(tls)~=0
                 XYmat1(tiles1(tls),tiles2(tls)) = XYmat1(tiles1(tls),tiles2(tls))+1;
